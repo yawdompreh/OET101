@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OET Study | DDOMPREH Stock Predict</title>
+    <meta
+      name="description"
+      content="A structured OET preparation course for healthcare professionals."
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main>
+      <header class="topbar">
+        <a class="brand" href="#top"><span>OET</span> STUDY</a>
+        <nav>
+          <a href="#curriculum">Curriculum</a>
+          <a href="#assessment">Assessment</a>
+          <button class="text-button" id="admin-open">Admin</button>
+          <button class="primary small" id="register-open">Create account</button>
+        </nav>
+        <button class="mobile-menu" id="mobile-menu-toggle" aria-label="Open menu">☰</button>
+      </header>
+      <nav class="mobile-nav" id="mobile-nav">
+        <a href="#curriculum">Curriculum</a>
+        <a href="#assessment">Assessment</a>
+        <button id="mobile-register-open">Create account</button>
+      </nav>
+
+      <section class="hero" id="top">
+        <div>
+          <p class="eyebrow">DDOMPREH STOCK PREDICT PRESENTS</p>
+          <h1>Prepare with purpose.<br /><i>Perform with confidence.</i></h1>
+          <p class="hero-copy">
+            A structured study path built from the official OET preparation guide,
+            made for healthcare professionals.
+          </p>
+          <a href="#curriculum" class="primary">Begin the course</a>
+        </div>
+        <div class="hero-art">
+          <div class="art-cross">+</div>
+          <div class="art-card">
+            <span>📘</span>
+            <span>OET</span>
+            <strong>READY</strong>
+          </div>
+          <div class="art-orbit"></div>
+        </div>
+      </section>
+
+      <section class="dashboard" id="curriculum">
+        <div class="progress-header">
+          <div>
+            <p class="eyebrow">YOUR LEARNING PATH</p>
+            <h2>Course curriculum</h2>
+          </div>
+          <div class="progress-box">
+            <span id="progress-copy"></span>
+            <div class="progress-track"><i id="progress-bar"></i></div>
+          </div>
+        </div>
+        <div class="course-layout">
+          <aside id="lesson-links"></aside>
+          <article class="lesson-panel" id="lesson-panel"></article>
+        </div>
+      </section>
+
+      <section class="assessment" id="assessment">
+        <div class="assessment-intro">
+          <p class="eyebrow">FINAL ASSESSMENT</p>
+          <h2>Show what you know.</h2>
+          <p>
+            Complete every chapter, then score at least 3 out of 4 on the final
+            questions to earn your course certificate.
+          </p>
+          <div class="stat">
+            <span>🏆</span>
+            <span><strong id="score-copy">0/4</strong> current score</span>
+          </div>
+        </div>
+        <div class="quiz" id="quiz"></div>
+      </section>
+
+      <footer>
+        <span>OET STUDY</span>
+        <p>Study systematically. Communicate clearly. Take your next step.</p>
+      </footer>
+    </main>
+
+    <div class="modal-backdrop hidden" role="dialog" id="auth-modal-shell">
+      <form class="auth-modal" id="auth-form">
+        <button type="button" class="close" id="auth-close" aria-label="Close">✕</button>
+        <p class="eyebrow" id="auth-eyebrow"></p>
+        <h2 id="auth-title"></h2>
+        <div id="register-fields"></div>
+        <label>
+          <span id="password-label">Password</span>
+          <input name="password" type="password" minlength="8" required />
+        </label>
+        <button class="primary" type="submit" id="auth-submit"></button>
+        <p class="admin-note hidden" id="admin-note">
+          Set <code>OET_ADMIN_PASSWORD</code> in <code>/js/config.js</code> before deployment.
+        </p>
+        <p class="form-message" id="auth-message"></p>
+      </form>
+    </div>
+
+    <section class="certificate hidden" id="certificate">
+      <button class="close" id="certificate-close" aria-label="Close certificate">✕</button>
+      <p class="eyebrow">CERTIFICATE OF COMPLETION</p>
+      <h2>OET Study Foundations</h2>
+      <p>This certifies that</p>
+      <h3 id="certificate-name">OET Learner</h3>
+      <p>has successfully completed the OET Study Foundations programme.</p>
+      <div>
+        <span>DDOMPREH STOCK PREDICT</span>
+        <span id="certificate-date"></span>
+      </div>
+      <button class="primary print" id="certificate-print">Print certificate</button>
+    </section>
+
+    <script type="module" src="./js/index.js"></script>
+  </body>
+</html>

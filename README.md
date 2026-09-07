@@ -1,36 +1,62 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# OET Study Portal (Static HTML/CSS/JavaScript)
 
-## Getting Started
+This repository now ships as a static web app built with:
+- HTML
+- CSS
+- Vanilla JavaScript (ES modules)
 
-First, run the development server:
+No TypeScript, Next.js runtime, or build step is required for the final app.
+
+## Features
+
+- Student learning portal with curriculum navigation
+- Per-chapter completion tracking
+- Knowledge-check prompts with revealable answers
+- Final assessment scoring (certificate unlock at 3/4 + all chapters complete)
+- Printable certificate with learner name and current date
+- Student registration modal with browser-side validation and duplicate checks
+- Admin portal (`/admin.html`) to edit chapters/materials/video links and publish updates
+
+## Data Persistence
+
+Because this is a static app, data is stored in `localStorage` in the browser:
+- Course edits
+- Registration records
+- Learner progress
+- Learner first name for certificate
+
+## Run locally
+
+From the repository root:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Then open:
+- `http://localhost:3000/index.html`
+- `http://localhost:3000/admin.html`
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Admin access
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Admin password is configured in:
+- `/home/runner/work/OET101/OET101/js/config.js`
 
-## Learn More
+Update `OET_ADMIN_PASSWORD` before deployment.
 
-To learn more about Next.js, take a look at the following resources:
+## Deploy to GitHub Pages
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+A workflow is included at:
+- `/home/runner/work/OET101/OET101/.github/workflows/deploy-pages.yml`
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Setup:
+1. Go to **Repository Settings → Pages**
+2. Set **Source** to **GitHub Actions**
+3. Push to `master` and wait for the workflow to complete
 
-## Deploy on Vercel
+Published URL pattern:
+- `https://yawdompreh.github.io/OET101/`
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Notes on parity
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The student and admin flows from the previous app are preserved in static form. The only unavoidable difference is persistence scope: course updates and registrations are now browser-local (`localStorage`) instead of server-side files/APIs.
