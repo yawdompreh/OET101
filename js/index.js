@@ -1,5 +1,10 @@
-import { OET_ADMIN_PASSWORD, STORAGE_KEYS } from "./config.js";
+import { OET_ADMIN_EMAIL, STORAGE_KEYS } from "./config.js";
 import { defaultLessons, finalQuestions } from "./course-data.js";
+import {
+  getAuthAvailabilityError,
+  sendAdminPasswordReset,
+  signInAdmin,
+} from "./firebase-auth.js";
 
 const state = {
   lessons: structuredClone(defaultLessons),
@@ -211,6 +216,19 @@ function setAuthMode(mode) {
 }
 
 function renderRegisterFields() {
+  if (state.authMode === "admin") {
+    registerFields.innerHTML = `
+      <label>
+        Admin email
+        <input name="email" type="email" value="${escapeHtml(OET_ADMIN_EMAIL)}" required />
+      </label>
+      <button class="text-button admin-forgot" id="admin-forgot-link" type="button">
+        Forgot password?
+      </button>
+    `;
+    return;
+  }
+
   if (state.authMode !== "register") {
     registerFields.innerHTML = "";
     return;
@@ -253,10 +271,19 @@ function renderAuthModal() {
   const isAdmin = state.authMode === "admin";
   authEyebrow.textContent = isAdmin ? "ADMIN PORTAL" : "STUDENT REGISTRATION";
   authTitle.textContent = isAdmin ? "Manage the course" : "Create your account";
-  authSubmit.textContent = isAdmin ? "Open admin portal" : "Register";
+  authSubmit.textContent = isAdmin ? "Sign in as admin" : "Register";
   passwordLabel.textContent = isAdmin ? "Admin password" : "Password";
   adminNote.classList.toggle("hidden", !isAdmin);
   renderRegisterFields();
+  if (isAdmin) {
+    document.getElementById("admin-forgot-link").addEventListener("click", async () => {
+      const emailInput = authForm.elements.namedItem("email");
+      const email = emailInput ? emailInput.value : OET_ADMIN_EMAIL;
+      const result = await sendAdminPasswordReset(email);
+      state.message = result.message;
+      renderAuthModal();
+    });
+  }
   authMessage.textContent = state.message;
 }
 
@@ -327,16 +354,18 @@ async function submitRegistration(event) {
   const form = new FormData(event.currentTarget);
 
   if (state.authMode === "admin") {
+    const email = String(form.get("email") || "");
     const password = String(form.get("password") || "");
-    if (!OET_ADMIN_PASSWORD) {
-      state.message =
-        "Admin access is not configured. Add OET_ADMIN_PASSWORD to your deployment environment.";
-    } else if (password !== OET_ADMIN_PASSWORD) {
-      state.message = "Incorrect administrator password.";
+    const configError = getAuthAvailabilityError();
+    if (configError) {
+      state.message = configError;
     } else {
-      state.message = "Administrator access granted. Course content is managed in the browser.";
-      window.location.assign("./admin.html");
-      return;
+      const result = await signInAdmin(email, password);
+      state.message = result.message;
+      if (result.ok) {
+        window.location.assign("./admin.html");
+        return;
+      }
     }
     renderAuthModal();
     return;

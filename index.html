@@ -100,7 +100,7 @@
         </label>
         <button class="primary" type="submit" id="auth-submit"></button>
         <p class="admin-note hidden" id="admin-note">
-          Set <code>OET_ADMIN_PASSWORD</code> in <code>/js/config.js</code> before deployment.
+          Configure Firebase in <code>/js/firebase-env.js</code> before using admin access.
         </p>
         <p class="form-message" id="auth-message"></p>
       </form>
@@ -120,6 +120,7 @@
       <button class="primary print" id="certificate-print">Print certificate</button>
     </section>
 
+    <script src="./js/firebase-env.js"></script>
     <script type="module" src="./js/index.js"></script>
   </body>
 </html>

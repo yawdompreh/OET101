@@ -1,12 +1,23 @@
-import { OET_ADMIN_PASSWORD, STORAGE_KEYS } from "./config.js";
+import { OET_ADMIN_EMAIL, STORAGE_KEYS } from "./config.js";
 import { defaultLessons } from "./course-data.js";
+import {
+  changeAdminPassword,
+  getAuthAvailabilityError,
+  isAdminEmail,
+  sendAdminPasswordReset,
+  signInAdmin,
+  signOutAdmin,
+  watchAdminAuthState,
+} from "./firebase-auth.js";
 
 const state = {
-  password: "",
   lessons: [],
   selected: 0,
   message: "",
+  authMessage: "",
+  passwordMessage: "",
   ready: false,
+  authView: "login",
 };
 
 const root = document.getElementById("admin-root");
@@ -60,42 +71,67 @@ function updateMaterial(materialIndex, key, value) {
   );
 }
 
-function renderLogin() {
+function renderAuthGate() {
   root.innerHTML = `
     <a href="./index.html" class="back">← Back to study site</a>
-    <form class="admin-login" id="unlock-form">
+    <form class="admin-login" id="auth-form">
       <p class="eyebrow">ADMIN PORTAL</p>
-      <h1>Course control room</h1>
-      <p>Enter your administrator password to update lessons and add teaching videos.</p>
+      <h1>${state.authView === "reset" ? "Reset admin password" : "Course control room"}</h1>
+      <p>${
+        state.authView === "reset"
+          ? "Enter the admin email to send a Firebase password reset email."
+          : "Sign in with the admin email and password to update lessons and videos."
+      }</p>
       <label>
-        Admin password
-        <input type="password" name="password" required />
+        Admin email
+        <input type="email" name="email" required value="${escapeHtml(OET_ADMIN_EMAIL)}" />
       </label>
-      <button class="primary">Continue</button>
-      ${state.message ? `<p class="form-message">${state.message}</p>` : ""}
+      ${
+        state.authView === "reset"
+          ? ""
+          : `<label>
+          Admin password
+          <input type="password" name="password" minlength="8" required />
+        </label>`
+      }
+      <button class="primary">${state.authView === "reset" ? "Send reset link" : "Continue"}</button>
+      <button type="button" class="secondary admin-toggle-auth" id="toggle-auth-view">
+        ${state.authView === "reset" ? "Back to sign in" : "Forgot password?"}
+      </button>
+      ${state.authMessage ? `<p class="form-message">${escapeHtml(state.authMessage)}</p>` : ""}
     </form>
   `;
 
-  document.getElementById("unlock-form").addEventListener("submit", (event) => {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    state.password = String(form.get("password") || "");
-    if (!OET_ADMIN_PASSWORD) {
-      state.message =
-        "Admin access is not configured. Add OET_ADMIN_PASSWORD to your deployment environment.";
-      render();
-      return;
-    }
-    if (state.password !== OET_ADMIN_PASSWORD) {
-      state.message = "Incorrect administrator password.";
-      render();
-      return;
-    }
-    state.lessons = readCourseLessons();
-    state.ready = true;
-    state.message = "";
+  const authForm = document.getElementById("auth-form");
+  const toggleButton = document.getElementById("toggle-auth-view");
+  toggleButton.addEventListener("click", () => {
+    state.authMessage = "";
+    state.authView = state.authView === "reset" ? "login" : "reset";
     render();
   });
+
+  authForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const email = String(form.get("email") || "");
+
+    if (state.authView === "reset") {
+      const result = await sendAdminPasswordReset(email);
+      state.authMessage = result.message;
+      render();
+      return;
+    }
+
+    const password = String(form.get("password") || "");
+    const result = await signInAdmin(email, password);
+    state.authMessage = result.message;
+    render();
+  });
+}
+
+function isStrongEnough(password) {
+  const value = String(password || "");
+  return value.length >= 8 && /[A-Za-z]/.test(value) && /\d/.test(value);
 }
 
 function renderEditor() {
@@ -135,10 +171,11 @@ function renderEditor() {
       </div>
       <div>
         <a href="./index.html" class="back">View student site</a>
+        <button class="secondary" id="sign-out">Sign out</button>
         <button class="primary" id="publish">Publish updates</button>
       </div>
     </header>
-    <p class="save-message">${state.message || "Edits are staged locally. Publish when you are ready."}</p>
+    <p class="save-message">${escapeHtml(state.message || "Edits are staged locally. Publish when you are ready.")}</p>
     <div class="editor-layout">
       <aside class="chapter-list">
         <button class="add-chapter" id="add-chapter">Add chapter</button>
@@ -196,9 +233,34 @@ function renderEditor() {
             <textarea id="lesson-answer">${escapeHtml(lesson.answer)}</textarea>
           </label>
         </div>
+
+        <div class="editor-section settings-panel">
+          <h3>Settings</h3>
+          <p>Change the password for ${escapeHtml(OET_ADMIN_EMAIL)}.</p>
+          <form id="password-change-form" class="password-change-form">
+            <label>
+              Current password
+              <input type="password" name="currentPassword" minlength="8" required />
+            </label>
+            <label>
+              New password
+              <input type="password" name="newPassword" minlength="8" required />
+            </label>
+            <label>
+              Confirm new password
+              <input type="password" name="confirmPassword" minlength="8" required />
+            </label>
+            <button class="primary" type="submit">Update password</button>
+            ${state.passwordMessage ? `<p class="form-message">${escapeHtml(state.passwordMessage)}</p>` : ""}
+          </form>
+        </div>
       </section>
     </div>
   `;
+
+  document.getElementById("sign-out").addEventListener("click", async () => {
+    await signOutAdmin();
+  });
 
   document.getElementById("add-chapter").addEventListener("click", () => {
     state.lessons = [...state.lessons, blankLesson()];
@@ -288,15 +350,69 @@ function renderEditor() {
     state.message = "Course updates have been published.";
     render();
   });
+
+  document.getElementById("password-change-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const currentPassword = String(form.get("currentPassword") || "");
+    const newPassword = String(form.get("newPassword") || "");
+    const confirmPassword = String(form.get("confirmPassword") || "");
+
+    if (newPassword !== confirmPassword) {
+      state.passwordMessage = "Confirm your new password exactly.";
+      render();
+      return;
+    }
+    if (!isStrongEnough(newPassword)) {
+      state.passwordMessage = "Use at least 8 characters including at least one letter and one number.";
+      render();
+      return;
+    }
+
+    const result = await changeAdminPassword(currentPassword, newPassword);
+    state.passwordMessage = result.message;
+    render();
+  });
 }
 
 function render() {
   if (!state.ready) {
     root.className = "admin-shell";
-    renderLogin();
+    renderAuthGate();
     return;
   }
   renderEditor();
 }
+
+const initialAuthError = getAuthAvailabilityError();
+if (initialAuthError) {
+  state.authMessage = initialAuthError;
+}
+
+watchAdminAuthState(async ({ isAuthenticated, isAdmin, user, error }) => {
+  if (error) {
+    state.ready = false;
+    state.authMessage = error;
+    render();
+    return;
+  }
+
+  if (isAuthenticated && user && !isAdminEmail(user.email)) {
+    await signOutAdmin();
+    state.ready = false;
+    state.authMessage = `Only ${OET_ADMIN_EMAIL} can access the admin portal.`;
+    render();
+    return;
+  }
+
+  state.ready = Boolean(isAuthenticated && isAdmin);
+  if (state.ready && !state.lessons.length) {
+    state.lessons = readCourseLessons();
+  }
+  if (!state.ready && !state.authMessage && !error) {
+    state.authMessage = "";
+  }
+  render();
+});
 
 render();
