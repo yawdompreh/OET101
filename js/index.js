@@ -309,6 +309,11 @@ async function hashPassword(password, saltHex) {
   return hexFromArrayBuffer(bits);
 }
 
+async function hashText(value) {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(String(value)));
+  return hexFromArrayBuffer(digest);
+}
+
 function readStudents() {
   try {
     return JSON.parse(localStorage.getItem(STORAGE_KEYS.students) || "[]");
@@ -349,11 +354,8 @@ async function submitRegistration(event) {
   }
 
   const students = readStudents();
-  if (
-    students.some(
-      (student) => student.username === payload.username || student.email === payload.email,
-    )
-  ) {
+  const emailHash = await hashText(String(payload.email).trim().toLowerCase());
+  if (students.some((student) => student.username === payload.username || student.emailHash === emailHash)) {
     state.message = "That username or email is already registered.";
     renderAuthModal();
     return;
@@ -363,10 +365,7 @@ async function submitRegistration(event) {
   const passwordHash = await hashPassword(String(payload.password), salt);
   students.push({
     username: String(payload.username),
-    firstName: String(payload.firstName),
-    lastName: String(payload.lastName),
-    email: String(payload.email),
-    telephone: String(payload.telephone),
+    emailHash,
     salt,
     passwordHash,
     createdAt: new Date().toISOString(),
