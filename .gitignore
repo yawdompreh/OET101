@@ -20,6 +20,9 @@
 # production
 /build
 
+# Runtime application data, including student registrations
+/data
+
 # misc
 .DS_Store
 *.pem
